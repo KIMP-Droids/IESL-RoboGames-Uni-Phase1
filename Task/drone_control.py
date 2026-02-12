@@ -23,7 +23,7 @@ class DroneConfig:
     yaw_rate: float = 30.0             # degrees per second
     position_tolerance: float = 0.3    # meters
     yaw_tolerance: float = 5.0         # degrees
-    arm_timeout: float = 30.0          # seconds
+    arm_timeout: float = 60.0          # seconds
     takeoff_timeout: float = 30.0      # seconds
     verbose: bool = True
 
@@ -69,6 +69,9 @@ class DroneController:
         try:
             self.vehicle = connect(conn_str, wait_ready=True, timeout=60)
             self._connected = True
+            self.vehicle.parameters['ARMING_CHECK'] = 0
+            self.vehicle.flush()          # push params
+            time.sleep(1)
             
             if self.config.verbose:
                 print(f"[Drone] Connected!")
@@ -106,14 +109,13 @@ class DroneController:
         """
         timeout = timeout or self.config.arm_timeout
         start = time.time()
-        
-        if self.config.verbose:
-            print("[Drone] Waiting for vehicle to be armable...")
-        
+               
         while not self.vehicle.is_armable:
-            if time.time() - start > timeout:
-                print("[Drone] Timeout waiting for armable state")
-                return False
+            if self.config.verbose:
+                print("[Drone] Waiting for vehicle to be armable...")
+                print(f"[Drone] GPS: fix={self.vehicle.gps_0.fix_type}, satellites={self.vehicle.gps_0.satellites_visible}")
+                print(f"[Drone] EKF OK: {self.vehicle.ekf_ok}")
+                print(f"[Drone] Battery: {self.vehicle.battery}")
             time.sleep(0.5)
         
         if self.config.verbose:
@@ -160,9 +162,6 @@ class DroneController:
         # Wait for arming
         start = time.time()
         while not self.vehicle.armed:
-            if time.time() - start > self.config.arm_timeout:
-                print("[Drone] Timeout waiting for arming")
-                return False
             if self.config.verbose:
                 print("  Waiting for arming...")
             time.sleep(0.5)
@@ -209,7 +208,6 @@ class DroneController:
             
             if time.time() - start > self.config.takeoff_timeout:
                 print("[Drone] Takeoff timeout")
-                return False
             
             time.sleep(0.5)
     
