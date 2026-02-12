@@ -38,7 +38,7 @@ class FlightConfig:
     camera_port: int = 5599
     
     # Flight parameters
-    takeoff_altitude: float = 2.5      # meters (below 3m requirement)
+    takeoff_altitude: float = 1.5      # meters (below 3m requirement)
     cruise_velocity: float = 0.3       # m/s forward speed while following line
     max_lateral_velocity: float = 0.4  # m/s max lateral correction
     
@@ -53,7 +53,7 @@ class FlightConfig:
     
     # AprilTag
     tag_family: str = 'tag36h11'
-    required_tags: int = 3             # Number of tags to detect before landing
+    required_tags: int = 2            # Number of tags to detect before landing
     tag_confirm_frames: int = 5        # Frames to confirm tag detection
     
     # Timing
@@ -294,8 +294,10 @@ class FlightMission:
         
         # Check for AprilTag first
         tags = self.tag_detector.detect(frame)
+        # Filter out tags that have already been detected
+        tags = [t for t in tags if t.tag_id not in self.tags_detected]
         if tags:
-            tag = tags[0]  # Take first detected tag
+            tag = tags[0]  # Take first new (undetected) tag
             
             # Confirm detection over multiple frames
             if tag.tag_id == self.current_tag_id:
@@ -520,7 +522,7 @@ def main():
                        help='Camera stream port')
     parser.add_argument('--viz', action='store_true',
                        help='Show debug visualization')
-    parser.add_argument('--altitude', type=float, default=2.5,
+    parser.add_argument('--altitude', type=float, default=1.5,
                        help='Takeoff altitude in meters')
     parser.add_argument('--threshold', type=int, default=150,
                        help='Line detection threshold (0-255)')

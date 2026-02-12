@@ -17,7 +17,7 @@ from pymavlink import mavutil
 class DroneConfig:
     """Configuration for drone control."""
     connection_string: str = 'udp:0.0.0.0:14550'
-    takeoff_altitude: float = 2.5      # meters (below 3m as required)
+    takeoff_altitude: float = 1.5      # meters (below 3m as required)
     max_velocity_xy: float = 0.5       # m/s horizontal
     max_velocity_z: float = 0.3        # m/s vertical
     yaw_rate: float = 30.0             # degrees per second
@@ -69,7 +69,10 @@ class DroneController:
         try:
             self.vehicle = connect(conn_str, wait_ready=True, timeout=60)
             self._connected = True
-            self.vehicle.parameters['ARMING_CHECK'] = 0
+            self.vehicle.parameters["ATC_RAT_PIT_I"] = 0.10
+            self.vehicle.parameters["ATC_RAT_RLL_I"] = 0.10
+            self.vehicle.parameters["ACRO_BAL_ROLL"] = 0.5
+            self.vehicle.parameters["ACRO_BAL_PITCH"] = 0.5
             self.vehicle.flush()          # push params
             time.sleep(1)
             
